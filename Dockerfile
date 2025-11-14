@@ -1,28 +1,26 @@
 # Etapa 1: Build
-FROM gradle:8.14.3-jdk21 AS build
+FROM gradle:8.11-jdk21 AS build
 
 WORKDIR /app
 
-
+# Copiar archivos de configuración de Gradle
 COPY build.gradle settings.gradle ./
-COPY gradle ./gradle
-COPY gradlew ./
 
+# Descargar dependencias (se cachea si no cambian)
+RUN gradle dependencies --no-daemon || true
 
-RUN ./gradlew dependencies --no-daemon
-
-
+# Copiar código fuente
 COPY src ./src
 
+# Compilar la aplicación
+RUN gradle bootJar --no-daemon
 
-RUN ./gradlew bootJar --no-daemon
-
-
+# Etapa 2: Runtime
 FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
-
+# Copiar el JAR compilado desde la etapa de build
 COPY --from=build /app/build/libs/*.jar app.jar
 
 # Exponer el puerto
